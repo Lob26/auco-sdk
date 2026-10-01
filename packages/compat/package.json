@@ -1,0 +1,41 @@
+{
+  "name": "@lob26/auco-compat",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AucoSDK(config) with the 1.x signature, reimplemented on @lob26/auco-embed.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@lob26/auco-embed": "workspace:*",
+    "@lob26/auco-protocol": "workspace:*",
+    "tsdown": "^0.23.0",
+    "vitest": "^5.0.3",
+    "happy-dom": "^20.14.5",
+    "@types/node": "^24.19.0"
+  },
+  "main": "./dist/index.cjs"
+}
