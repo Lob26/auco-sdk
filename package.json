@@ -19,8 +19,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test",
-    "size": "size-limit",
-    "changeset": "changeset"
+    "size": "size-limit"
   },
   "size-limit": [
     {
@@ -32,11 +31,17 @@
       "name": "legacy (CJS)",
       "path": "packages/legacy/dist/index.cjs",
       "limit": "5 KB"
+    },
+    {
+      "name": "v2 core: protocol + embed (ESM, gzip)",
+      "path": "packages/embed/dist/index.mjs",
+      "import": "*",
+      "gzip": true,
+      "limit": "3 KB"
     }
   ],
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@changesets/cli": "^3.0.3",
     "@size-limit/preset-small-lib": "^14.1.0",
     "shellcheck": "^4.1.0",
     "size-limit": "^14.1.0",
