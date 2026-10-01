@@ -8,7 +8,7 @@
 # together or the local gates and CI drift apart.
 set -euo pipefail
 
-readonly STEPS=(install fixtures shell lint typecheck build test size)
+readonly STEPS=(install fixtures shell lint typecheck build test mutants size)
 
 step_install() { pnpm install --frozen-lockfile; }
 
@@ -40,6 +40,7 @@ step_lint() { pnpm exec biome ci .; }
 step_typecheck() { pnpm -r --if-present typecheck; }
 step_build() { pnpm -r --if-present build; }
 step_test() { pnpm -r --if-present test; }
+step_mutants() { bash scripts/mutants.sh; }
 step_size() { pnpm run size; }
 
 in_actions() { [[ -n ${GITHUB_ACTIONS:-} ]]; }

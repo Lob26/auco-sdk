@@ -9,6 +9,7 @@ import {
   flush,
   ID_QUERY,
   KEY_PUBLIC,
+  legacyOnly,
   mountIframe,
   readProtocol,
   SDK_TYPES,
@@ -21,7 +22,9 @@ import {
 
 // Pins what auco-sdk-integration 1.0.9 does today, driven by
 // packages/protocol/fixtures. Defects are pinned as they are; the correct
-// behavior lives in known-defects.test.ts.
+// behavior lives in known-defects.test.ts. A pin whose assertion IS a defect
+// compat fixes runs through `legacyOnly`; everything else is the contract
+// compat must keep, and runs unchanged against both targets.
 //
 // A fixture is never both the input and the expected value of one test:
 // host→frame fixtures are compared to what 1.0.9 builds from a literal config,
@@ -103,24 +106,37 @@ describe('iframe.src per sdkType × env (PROTOCOL.md §1.1)', () => {
     }))
   );
 
-  it.each(cases)(
+  const loadsTableOrigin = ({
+    sdkType,
+    env,
+    keyPublic,
+    column,
+  }: (typeof cases)[number]) => {
+    const origin = originTable.get(sdkType)?.[column];
+    expect(origin).toBeTypeOf('string');
+    const frame = mountIframe('auco');
+    start({
+      sdkType,
+      env,
+      iframeId: 'auco',
+      language: 'es',
+      sdkData: { uxOptions: UX_OPTIONS },
+      events: baseEvents(),
+      ...(keyPublic ? { keyPublic } : {}),
+    });
+    expect(frame.iframe.src).toMatch(srcPattern(origin ?? '<missing>'));
+  };
+
+  it.each(cases.filter((c) => c.sdkType !== 'list-validation'))(
     '$sdkType, $env $key',
-    ({ sdkType, env, keyPublic, column }) => {
-      const origin = originTable.get(sdkType)?.[column];
-      expect(origin).toBeTypeOf('string');
-      const frame = mountIframe('auco');
-      start({
-        sdkType,
-        env,
-        iframeId: 'auco',
-        language: 'es',
-        sdkData: { uxOptions: UX_OPTIONS },
-        events: baseEvents(),
-        ...(keyPublic ? { keyPublic } : {}),
-      });
-      expect(frame.iframe.src).toMatch(srcPattern(origin ?? '<missing>'));
-    }
+    loadsTableOrigin
   );
+
+  // Its origin is '' in every column, so 1.0.9 loads the relative URL ?id=….
+  legacyOnly.each(
+    '1.2',
+    cases.filter((c) => c.sdkType === 'list-validation')
+  )('$sdkType, $env $key', loadsTableOrigin);
 
   it('customOrigin wins over sdkType and env', () => {
     const frame = mountIframe('auco');
@@ -138,11 +154,15 @@ describe('iframe.src per sdkType × env (PROTOCOL.md §1.1)', () => {
     }
   );
 
-  it('an unknown sdkType resolves to undefined and loads undefined?id=…', () => {
-    const frame = mountIframe('auco');
-    start(signConfig(frame, { sdkType: 'contrato' }));
-    expect(frame.iframe.src).toMatch(srcPattern('undefined'));
-  });
+  legacyOnly(
+    '1.2',
+    'an unknown sdkType resolves to undefined and loads undefined?id=…',
+    () => {
+      const frame = mountIframe('auco');
+      start(signConfig(frame, { sdkType: 'contrato' }));
+      expect(frame.iframe.src).toMatch(srcPattern('undefined'));
+    }
+  );
 
   it("customOrigin '' is ignored: the sdkType × env table decides", () => {
     const frame = mountIframe('auco');
@@ -382,7 +402,7 @@ describe('dispatch order (PROTOCOL.md §1.4)', () => {
     { name: 'null', data: null },
     { name: 'undefined', data: undefined },
   ])(
-    'event.data $name rejects with a TypeError at the ready check',
+    'event.data $name is not answered (1.0.9: a TypeError at the ready check)',
     async ({ data }) => {
       const frame = mountIframe('auco');
       const config = signConfig(frame);
@@ -392,9 +412,11 @@ describe('dispatch order (PROTOCOL.md §1.4)', () => {
         sendFromFrame(SIGN_ORIGIN, data, frame.window);
       });
 
-      expect(rejections).toHaveLength(1);
-      expect(rejections[0]).toBeInstanceOf(TypeError);
-      expect((rejections[0] as Error).message).toMatch(/ready/);
+      legacyOnly.assert('1.8', () => {
+        expect(rejections).toHaveLength(1);
+        expect(rejections[0]).toBeInstanceOf(TypeError);
+        expect((rejections[0] as Error).message).toMatch(/ready/);
+      });
       expect(frame.postMessage).not.toHaveBeenCalled();
       expect(config.events.onSDKReady).not.toHaveBeenCalled();
     }
@@ -405,7 +427,7 @@ describe('dispatch order (PROTOCOL.md §1.4)', () => {
     { name: 'a boolean', type: true },
     { name: 'an object', type: { kind: 'SDK-CLOSE' } },
   ])(
-    'a type that is $name rejects with a TypeError at the token predicate',
+    'a type that is $name is not dispatched (1.0.9: a TypeError at the token predicate)',
     async ({ type }) => {
       const frame = mountIframe('auco');
       const onSDKToken = vi.fn(async () => TOKEN);
@@ -418,9 +440,11 @@ describe('dispatch order (PROTOCOL.md §1.4)', () => {
         sendFromFrame(SIGN_ORIGIN, { type }, frame.window);
       });
 
-      expect(rejections).toHaveLength(1);
-      expect(rejections[0]).toBeInstanceOf(TypeError);
-      expect((rejections[0] as Error).message).toMatch(/includes/);
+      legacyOnly.assert('1.3', () => {
+        expect(rejections).toHaveLength(1);
+        expect(rejections[0]).toBeInstanceOf(TypeError);
+        expect((rejections[0] as Error).message).toMatch(/includes/);
+      });
       expect(onSDKToken).not.toHaveBeenCalled();
       expect(frame.postMessage).not.toHaveBeenCalled();
     }
@@ -498,7 +522,7 @@ describe('frame.token-request → host.token', () => {
     expect(frame.postMessage).not.toHaveBeenCalled();
   });
 
-  it('without onSDKToken rejects inside the listener, not at start', async () => {
+  it('without onSDKToken starts and answers nothing (1.0.9: rejects inside the listener)', async () => {
     const frame = mountIframe('auco');
     start(signConfig(frame));
     const rejections = await captureUnhandledRejections(() => {
@@ -508,11 +532,13 @@ describe('frame.token-request → host.token', () => {
         frame.window
       );
     });
-    expect(rejections).toHaveLength(1);
-    expect(rejections[0]).toHaveProperty(
-      'message',
-      "Could not get token, SDK is asking for user token, but there isn't a onSDKToken function provided"
-    );
+    legacyOnly.assert('1.3', () => {
+      expect(rejections).toHaveLength(1);
+      expect(rejections[0]).toHaveProperty(
+        'message',
+        "Could not get token, SDK is asking for user token, but there isn't a onSDKToken function provided"
+      );
+    });
     expect(frame.postMessage).not.toHaveBeenCalled();
   });
 
@@ -555,18 +581,22 @@ describe('frame.pay and frame.notification', () => {
     expect(frame.postMessage).not.toHaveBeenCalled();
   });
 
-  it('frame.pay without onSDKPay rejects inside the listener', async () => {
-    const frame = mountIframe('auco');
-    start(signConfig(frame));
-    const rejections = await captureUnhandledRejections(() => {
-      sendFromFrame(SIGN_ORIGIN, fixture('frame.pay').data, frame.window);
-    });
-    expect(rejections).toHaveLength(1);
-    expect(rejections[0]).toHaveProperty(
-      'message',
-      "SDK is asking for payment, but there isn't a onSDKPay function provided"
-    );
-  });
+  legacyOnly(
+    '1.3',
+    'frame.pay without onSDKPay rejects inside the listener',
+    async () => {
+      const frame = mountIframe('auco');
+      start(signConfig(frame));
+      const rejections = await captureUnhandledRejections(() => {
+        sendFromFrame(SIGN_ORIGIN, fixture('frame.pay').data, frame.window);
+      });
+      expect(rejections).toHaveLength(1);
+      expect(rejections[0]).toHaveProperty(
+        'message',
+        "SDK is asking for payment, but there isn't a onSDKPay function provided"
+      );
+    }
+  );
 
   it('frame.notification hands data.data to onSDKNotification', async () => {
     const frame = mountIframe('auco');
@@ -748,7 +778,7 @@ describe('frame.close → onSDKClose(a, b, signProfile)', () => {
     expect(events.onSDKReady).toHaveBeenCalledTimes(1); // now removed
   });
 
-  it('keeps the listener when onSDKClose rejects, and the rejection is unhandled', async () => {
+  it('keeps the listener when onSDKClose rejects (1.0.9: the rejection is unhandled)', async () => {
     const frame = mountIframe('auco');
     const failure = new Error('integrador falló');
     const events = {
@@ -764,7 +794,9 @@ describe('frame.close → onSDKClose(a, b, signProfile)', () => {
         frame.window
       );
     });
-    expect(rejections).toEqual([failure]);
+    legacyOnly.assert('1.3', () => {
+      expect(rejections).toEqual([failure]);
+    });
 
     sendReady(frame);
     expect(events.onSDKReady).toHaveBeenCalledTimes(1);
@@ -777,27 +809,38 @@ describe('teardown', () => {
     { message: 'frame.back', handler: 'onSDKBack' },
   ] as const;
 
-  it.each([
-    ...terminal.map((t) => ({ ...t, given: true })),
-    ...terminal.map((t) => ({ ...t, given: false })),
-  ])(
-    '$message with $handler given=$given removes the listener only if given',
-    async ({ message, handler, given }) => {
-      const frame = mountIframe('auco');
-      const callback = vi.fn();
-      const events = {
-        ...baseEvents(),
-        ...(given ? { [handler]: callback } : {}),
-      };
-      start(signConfig(frame, { events }));
+  const removesListenerOnlyIfGiven = async ({
+    message,
+    handler,
+    given,
+  }: (typeof terminal)[number] & { given: boolean }) => {
+    const frame = mountIframe('auco');
+    const callback = vi.fn();
+    const events = {
+      ...baseEvents(),
+      ...(given ? { [handler]: callback } : {}),
+    };
+    start(signConfig(frame, { events }));
 
-      sendFromFrame(SIGN_ORIGIN, fixture(message).data, frame.window);
-      await flush();
-      expect(callback).toHaveBeenCalledTimes(given ? 1 : 0);
+    sendFromFrame(SIGN_ORIGIN, fixture(message).data, frame.window);
+    await flush();
+    expect(callback).toHaveBeenCalledTimes(given ? 1 : 0);
 
-      sendReady(frame);
-      expect(events.onSDKReady).toHaveBeenCalledTimes(given ? 0 : 1);
-    }
+    sendReady(frame);
+    expect(events.onSDKReady).toHaveBeenCalledTimes(given ? 0 : 1);
+  };
+
+  it.each(terminal.map((t) => ({ ...t, given: true })))(
+    '$message with $handler given=$given removes the listener',
+    removesListenerOnlyIfGiven
+  );
+
+  legacyOnly.each(
+    '1.6',
+    terminal.map((t) => ({ ...t, given: false }))
+  )(
+    '$message with $handler given=$given keeps the listener',
+    removesListenerOnlyIfGiven
   );
 
   it.each(terminal)(
@@ -854,7 +897,7 @@ describe('teardown', () => {
   );
 
   it.each(terminal)(
-    '$message: a rejecting $handler leaves the listener attached',
+    '$message: a rejecting $handler leaves the listener attached (1.0.9: the rejection is unhandled)',
     async ({ message, handler }) => {
       const frame = mountIframe('auco');
       const failure = new Error('integrador falló');
@@ -867,14 +910,16 @@ describe('teardown', () => {
       const rejections = await captureUnhandledRejections(() => {
         sendFromFrame(SIGN_ORIGIN, fixture(message).data, frame.window);
       });
-      expect(rejections).toEqual([failure]);
+      legacyOnly.assert('1.3', () => {
+        expect(rejections).toEqual([failure]);
+      });
 
       sendReady(frame);
       expect(events.onSDKReady).toHaveBeenCalledTimes(1);
     }
   );
 
-  it('unsubscribe removes the listener and leaves iframe.src as it was', () => {
+  it('unsubscribe removes the listener (1.0.9: and leaves iframe.src as it was)', () => {
     const frame = mountIframe('auco');
     const config = signConfig(frame);
     const unsubscribe = start(config);
@@ -884,8 +929,10 @@ describe('teardown', () => {
     sendReady(frame);
 
     expect(config.events.onSDKReady).not.toHaveBeenCalled();
-    expect(frame.iframe.src).toBe(srcBefore);
-    expect(frame.iframe.src).toMatch(srcPattern(SIGN_ORIGIN));
+    legacyOnly.assert('1.6', () => {
+      expect(frame.iframe.src).toBe(srcBefore);
+      expect(frame.iframe.src).toMatch(srcPattern(SIGN_ORIGIN));
+    });
   });
 });
 
