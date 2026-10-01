@@ -1,0 +1,21 @@
+{
+  "id": "host.init",
+  "variant": "upload",
+  "direction": "host-to-frame",
+  "products": ["upload"],
+  "source": "src/index.ts#L78",
+  "confidence": "code",
+  "data": {
+    "language": "es",
+    "userAttributes": {
+      "email": "admin@example.com"
+    },
+    "uxOptions": {
+      "primaryColor": "#021c30",
+      "alternateColor": "#a557f2"
+    },
+    "keyPublic": "puk_00000000000000000000000000000000",
+    "sdkParentURL": "https://app.example.com/contratos/nuevo",
+    "flowType": "upload"
+  }
+}

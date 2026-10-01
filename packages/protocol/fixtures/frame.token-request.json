@@ -1,0 +1,21 @@
+{
+  "id": "frame.token-request",
+  "variant": null,
+  "direction": "frame-to-host",
+  "products": [
+    "upload",
+    "upload-v2",
+    "read",
+    "attachments",
+    "validation-attachments",
+    "validation",
+    "sign",
+    "fill",
+    "list-validation"
+  ],
+  "source": "src/index.ts#L91",
+  "confidence": "code",
+  "data": {
+    "type": "token"
+  }
+}

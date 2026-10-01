@@ -1,0 +1,22 @@
+{
+  "id": "host.token",
+  "variant": null,
+  "direction": "host-to-frame",
+  "products": [
+    "upload",
+    "upload-v2",
+    "read",
+    "attachments",
+    "validation-attachments",
+    "validation",
+    "sign",
+    "fill",
+    "list-validation"
+  ],
+  "source": "src/index.ts#L98",
+  "confidence": "code",
+  "data": {
+    "type": "token",
+    "token": "fake-session-token-0000"
+  }
+}

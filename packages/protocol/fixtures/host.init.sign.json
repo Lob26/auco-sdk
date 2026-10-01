@@ -1,0 +1,19 @@
+{
+  "id": "host.init",
+  "variant": "sign",
+  "direction": "host-to-frame",
+  "products": ["sign"],
+  "source": "src/index.ts#L78",
+  "confidence": "code",
+  "data": {
+    "language": "es",
+    "document": "DOC0000000AA",
+    "signFlow": "document",
+    "uxOptions": {
+      "primaryColor": "#021c30",
+      "alternateColor": "#a557f2"
+    },
+    "keyPublic": "puk_00000000000000000000000000000000",
+    "sdkParentURL": "https://app.example.com/contratos/firmar"
+  }
+}

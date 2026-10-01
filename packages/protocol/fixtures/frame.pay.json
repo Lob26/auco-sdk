@@ -1,0 +1,27 @@
+{
+  "id": "frame.pay",
+  "variant": null,
+  "direction": "frame-to-host",
+  "products": [
+    "upload",
+    "upload-v2",
+    "read",
+    "attachments",
+    "validation-attachments",
+    "validation",
+    "sign",
+    "fill",
+    "list-validation"
+  ],
+  "source": "src/index.ts#L100",
+  "confidence": "code",
+  "data": {
+    "type": "SDK-PAY",
+    "data": {
+      "code": "DOC0000000AA",
+      "epaycoKey": "epayco_fake_00000000",
+      "validation": false,
+      "packageId": "PKG0000000AA"
+    }
+  }
+}

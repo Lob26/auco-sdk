@@ -1,0 +1,13 @@
+{
+  "id": "frame.close",
+  "variant": "validation",
+  "direction": "frame-to-host",
+  "products": ["validation"],
+  "source": "src/index.ts#L113",
+  "confidence": "code",
+  "data": {
+    "type": "SDK-CLOSE",
+    "similarity": 91.5,
+    "status": "APPROVED"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "id": "frame.close",
+  "variant": "validation-pending",
+  "direction": "frame-to-host",
+  "products": ["validation"],
+  "source": "src/index.ts#L113",
+  "confidence": "code",
+  "data": {
+    "type": "SDK-CLOSE",
+    "status": "PENDING"
+  }
+}
