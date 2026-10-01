@@ -1,0 +1,5 @@
+{
+  // Declarations come from src only; tests and configs stay out of the emit.
+  "extends": "./tsconfig.json",
+  "include": ["src"]
+}
