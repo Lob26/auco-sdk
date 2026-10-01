@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, vi } from 'vitest';
 import {
   baseEvents,
   captureUnhandledRejections,
+  defect,
   deferred,
   type FakeFrame,
   fixture,
@@ -13,11 +14,12 @@ import {
   teardown,
 } from './support';
 
-// One `it.fails` per 🔴 finding of the 1.x audit that is observable at
+// One `defect` per 🔴 finding of the 1.x audit that is observable at
 // runtime: https://github.com/Lob26/auco-sdk/issues/1
-// Each test asserts the CORRECT behavior, so it fails against 1.0.9 and
-// `it.fails` turns that failure green. Phase 1 fixes the defect and flips the
-// test to `it`; a fix that lands without the flip turns the suite red.
+// Each test asserts the CORRECT behavior, so it fails against 1.0.9 and runs
+// as `it.fails` there. `fixedIn` says who fixes it: against compat the
+// `compat` ones run as plain `it`, so compat must fix exactly those, and a fix
+// of any other one turns its `it.fails` red until it is reclassified.
 // Every test here fails on its own `expect`, never on a crash of the setup:
 // a crash would keep `it.fails` green after the defect is fixed.
 
@@ -83,27 +85,31 @@ afterEach(() => {
 });
 
 describe('known defects of 1.0.9 (Lob26/auco-sdk#1)', () => {
-  it.fails('1.1 a frame does not reach the listener of another iframe of the same origin', async () => {
-    const a = mountIframe('firma-a');
-    const b = mountIframe('firma-b');
-    start(signConfig(a));
-    const configB = signConfig(b);
-    start(configB);
+  defect(
+    { id: '1.1', fixedIn: 'compat' },
+    'a frame does not reach the listener of another iframe of the same origin',
+    async () => {
+      const a = mountIframe('firma-a');
+      const b = mountIframe('firma-b');
+      start(signConfig(a));
+      const configB = signConfig(b);
+      start(configB);
 
-    sendFromFrame(SIGN_ORIGIN, fixture('frame.close', 'sign').data, a.window);
-    await flush();
+      sendFromFrame(SIGN_ORIGIN, fixture('frame.close', 'sign').data, a.window);
+      await flush();
 
-    expect(configB.events.onSDKClose).not.toHaveBeenCalled();
-  });
+      expect(configB.events.onSDKClose).not.toHaveBeenCalled();
+    }
+  );
 
-  it.fails.each([
+  defect.each({ id: '1.2', fixedIn: 'compat' }, [
     {
       name: 'list-validation without customOrigin',
       sdkType: 'list-validation',
     },
     { name: 'an unknown sdkType', sdkType: 'no-existe' },
   ])(
-    '1.2 $name is refused at start with a deliberate error, or loads an absolute https URL',
+    '$name is refused at start with a deliberate error, or loads an absolute https URL',
     ({ sdkType }) => {
       const frame = mountIframe('auco');
       const outcome = startOutcome(
@@ -125,7 +131,7 @@ describe('known defects of 1.0.9 (Lob26/auco-sdk#1)', () => {
     }
   );
 
-  it.fails.each([
+  defect.each({ id: '1.3', fixedIn: 'compat' }, [
     {
       name: 'a token request without onSDKToken',
       message: () => fixture('frame.token-request').data,
@@ -146,8 +152,37 @@ describe('known defects of 1.0.9 (Lob26/auco-sdk#1)', () => {
         }),
       }),
     },
+    {
+      name: 'a type that is neither string nor array',
+      message: () => ({ type: 5 }),
+      events: () => baseEvents(),
+    },
+    {
+      name: 'an onSDKClose that rejects',
+      message: () => fixture('frame.close', 'sign').data,
+      events: () => ({
+        ...baseEvents(),
+        onSDKClose: vi.fn(() => Promise.reject(new Error('integrador falló'))),
+      }),
+    },
+    {
+      name: 'an onSDKFinish that rejects',
+      message: () => fixture('frame.finish').data,
+      events: () => ({
+        ...baseEvents(),
+        onSDKFinish: vi.fn(() => Promise.reject(new Error('integrador falló'))),
+      }),
+    },
+    {
+      name: 'an onSDKBack that rejects',
+      message: () => fixture('frame.back').data,
+      events: () => ({
+        ...baseEvents(),
+        onSDKBack: vi.fn(() => Promise.reject(new Error('integrador falló'))),
+      }),
+    },
   ])(
-    '1.3 $name does not end in an unhandled rejection',
+    '$name does not end in an unhandled rejection',
     async ({ message, events }) => {
       const frame = mountIframe('auco');
       start(signConfig(frame, { events: events() }));
@@ -160,90 +195,123 @@ describe('known defects of 1.0.9 (Lob26/auco-sdk#1)', () => {
     }
   );
 
-  it.fails('1.4 a rejected onSDKToken is reported to the frame', async () => {
-    const frame = mountIframe('auco');
-    const onSDKToken = vi.fn(() =>
-      Promise.reject(new Error('token backend down'))
-    );
-    start(signConfig(frame, { events: { ...baseEvents(), onSDKToken } }));
+  defect.each({ id: '1.8', fixedIn: 'compat' }, [
+    { name: 'null', data: null },
+    { name: 'undefined', data: undefined },
+  ])(
+    'event.data $name from the frame is not an unhandled rejection',
+    async ({ data }) => {
+      const frame = mountIframe('auco');
+      start(signConfig(frame));
 
-    // The rejection is the defect's other half (1.3); captured so it is
-    // asserted on here rather than failing the whole run.
-    await captureUnhandledRejections(() => {
+      const rejections = await captureUnhandledRejections(() => {
+        sendFromFrame(SIGN_ORIGIN, data, frame.window);
+      });
+
+      expect(rejections).toEqual([]);
+    }
+  );
+
+  defect(
+    { id: '1.4', fixedIn: 'auco' },
+    'a rejected onSDKToken is reported to the frame',
+    async () => {
+      const frame = mountIframe('auco');
+      const onSDKToken = vi.fn(() =>
+        Promise.reject(new Error('token backend down'))
+      );
+      start(signConfig(frame, { events: { ...baseEvents(), onSDKToken } }));
+
+      // The rejection is the defect's other half (1.3); captured so it is
+      // asserted on here rather than failing the whole run.
+      await captureUnhandledRejections(() => {
+        sendFromFrame(
+          SIGN_ORIGIN,
+          fixture('frame.token-request').data,
+          frame.window
+        );
+      });
+
+      expect(onSDKToken).toHaveBeenCalledTimes(1);
+      expectTokenFailureReported(frame);
+    }
+  );
+
+  defect(
+    { id: '1.4', fixedIn: 'auco' },
+    'an onSDKToken that never settles times out and is reported to the frame',
+    async () => {
+      vi.useFakeTimers();
+      const frame = mountIframe('auco');
+      const onSDKToken = vi.fn(() => new Promise<string>(() => {}));
+      start(signConfig(frame, { events: { ...baseEvents(), onSDKToken } }));
+
       sendFromFrame(
         SIGN_ORIGIN,
         fixture('frame.token-request').data,
         frame.window
       );
-    });
+      await vi.advanceTimersByTimeAsync(TOKEN_TIMEOUT_BOUND_MS);
 
-    expect(onSDKToken).toHaveBeenCalledTimes(1);
-    expectTokenFailureReported(frame);
-  });
-
-  it.fails('1.4 an onSDKToken that never settles times out and is reported to the frame', async () => {
-    vi.useFakeTimers();
-    const frame = mountIframe('auco');
-    const onSDKToken = vi.fn(() => new Promise<string>(() => {}));
-    start(signConfig(frame, { events: { ...baseEvents(), onSDKToken } }));
-
-    sendFromFrame(
-      SIGN_ORIGIN,
-      fixture('frame.token-request').data,
-      frame.window
-    );
-    await vi.advanceTimersByTimeAsync(TOKEN_TIMEOUT_BOUND_MS);
-
-    expect(onSDKToken).toHaveBeenCalledTimes(1);
-    expectTokenFailureReported(frame);
-  });
-
-  it.fails('1.4 concurrent token requests are each answered with their own correlation id', async () => {
-    const frame = mountIframe('auco');
-    const first = deferred<string>();
-    const second = deferred<string>();
-    const onSDKToken = vi
-      .fn<() => Promise<string>>()
-      .mockReturnValueOnce(first.promise)
-      .mockReturnValueOnce(second.promise);
-    start(signConfig(frame, { events: { ...baseEvents(), onSDKToken } }));
-
-    // The frame's real request literal is unknown (PROTOCOL.md §4, question
-    // 1); `id` stands for whatever correlation the fixed protocol adopts.
-    sendFromFrame(SIGN_ORIGIN, { type: 'token', id: 'req-a' }, frame.window);
-    sendFromFrame(SIGN_ORIGIN, { type: 'token', id: 'req-b' }, frame.window);
-    second.resolve('token-b'); // resolves out of order
-    await flush();
-    first.resolve('token-a');
-    await flush();
-
-    const answers = frame.postMessage.mock.calls.map(
-      ([answer]) => answer as Record<string, unknown>
-    );
-    expect(answers).toHaveLength(2);
-    for (const [request, token] of [
-      ['req-a', 'token-a'],
-      ['req-b', 'token-b'],
-    ] as const) {
-      const answer = answers.find((a) => a.token === token);
-      expect(Object.values(answer ?? {})).toContain(request);
+      expect(onSDKToken).toHaveBeenCalledTimes(1);
+      expectTokenFailureReported(frame);
     }
-  });
+  );
 
-  it.fails('1.6 unsubscribe stops the iframe', () => {
-    const frame = mountIframe('auco');
-    const unsubscribe = start(signConfig(frame));
+  defect(
+    { id: '1.4', fixedIn: 'auco' },
+    'concurrent token requests are each answered with their own correlation id',
+    async () => {
+      const frame = mountIframe('auco');
+      const first = deferred<string>();
+      const second = deferred<string>();
+      const onSDKToken = vi
+        .fn<() => Promise<string>>()
+        .mockReturnValueOnce(first.promise)
+        .mockReturnValueOnce(second.promise);
+      start(signConfig(frame, { events: { ...baseEvents(), onSDKToken } }));
 
-    unsubscribe();
+      // The frame's real request literal is unknown (PROTOCOL.md §4, question
+      // 1); `id` stands for whatever correlation the fixed protocol adopts.
+      sendFromFrame(SIGN_ORIGIN, { type: 'token', id: 'req-a' }, frame.window);
+      sendFromFrame(SIGN_ORIGIN, { type: 'token', id: 'req-b' }, frame.window);
+      second.resolve('token-b'); // resolves out of order
+      await flush();
+      first.resolve('token-a');
+      await flush();
 
-    expect(frame.iframe.src).not.toMatch(/^https:\/\/sign\.auco\.ai\?id=/);
-  });
+      const answers = frame.postMessage.mock.calls.map(
+        ([answer]) => answer as Record<string, unknown>
+      );
+      expect(answers).toHaveLength(2);
+      for (const [request, token] of [
+        ['req-a', 'token-a'],
+        ['req-b', 'token-b'],
+      ] as const) {
+        const answer = answers.find((a) => a.token === token);
+        expect(Object.values(answer ?? {})).toContain(request);
+      }
+    }
+  );
 
-  it.fails.each([
+  defect(
+    { id: '1.6', fixedIn: 'compat' },
+    'unsubscribe stops the iframe',
+    () => {
+      const frame = mountIframe('auco');
+      const unsubscribe = start(signConfig(frame));
+
+      unsubscribe();
+
+      expect(frame.iframe.src).not.toMatch(/^https:\/\/sign\.auco\.ai\?id=/);
+    }
+  );
+
+  defect.each({ id: '1.6', fixedIn: 'compat' }, [
     { message: 'frame.finish', handler: 'onSDKFinish' },
     { message: 'frame.back', handler: 'onSDKBack' },
   ])(
-    '1.6 $message without $handler still ends the session',
+    '$message without $handler still ends the session',
     async ({ message }) => {
       const frame = mountIframe('auco');
       const config = signConfig(frame);
@@ -257,20 +325,30 @@ describe('known defects of 1.0.9 (Lob26/auco-sdk#1)', () => {
     }
   );
 
-  it.fails('1.6 starting twice on the same iframe does not stack listeners', () => {
-    const frame = mountIframe('auco');
-    start(signConfig(frame));
-    start(signConfig(frame));
+  defect(
+    { id: '1.6', fixedIn: 'compat' },
+    'starting twice on the same iframe does not stack listeners',
+    () => {
+      const frame = mountIframe('auco');
+      start(signConfig(frame));
+      start(signConfig(frame));
 
-    sendFromFrame(SIGN_ORIGIN, fixture('frame.ready').data, frame.window);
+      sendFromFrame(SIGN_ORIGIN, fixture('frame.ready').data, frame.window);
 
-    expect(frame.postMessage).toHaveBeenCalledTimes(1);
-  });
+      expect(frame.postMessage).toHaveBeenCalledTimes(1);
+    }
+  );
 
-  it.fails('6.2 DEV without keyPublic, as docs.auco.ai/sdk/signature shows, does not load an internal *-dev host', () => {
-    const frame = mountIframe('auco');
-    start(signConfig(frame, { env: 'DEV' }));
+  defect(
+    { id: '6.2', fixedIn: 'v2' },
+    'DEV without keyPublic, as docs.auco.ai/sdk/signature shows, does not load an internal *-dev host',
+    () => {
+      const frame = mountIframe('auco');
+      start(signConfig(frame, { env: 'DEV' }));
 
-    expect(frame.iframe.src).not.toMatch(/^https:\/\/[a-z0-9]+-dev\.auco\.ai/);
-  });
+      expect(frame.iframe.src).not.toMatch(
+        /^https:\/\/[a-z0-9]+-dev\.auco\.ai/
+      );
+    }
+  );
 });

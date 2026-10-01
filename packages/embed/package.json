@@ -1,0 +1,29 @@
+{
+  "name": "@lob26/auco-embed",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Framework-agnostic Auco embed session: owns the iframe, its lifecycle and typed events.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@lob26/auco-protocol": "workspace:*",
+    "tsdown": "^0.23.0"
+  }
+}
