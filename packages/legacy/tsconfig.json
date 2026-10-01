@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // src/index.ts:1 imports the types TAucoSDK, Config, SDKTypeObjectKeys,
+    // SDKs and EnvType without `import type` (TS1484). Legacy code is moved,
+    // not edited; tsdown erases the import either way, so the output is equal.
+    "verbatimModuleSyntax": false,
+    // test/support.ts uses node:fs, process and import.meta.dirname. TS 7
+    // defaults "types" to []; without this, @types/node only arrives through
+    // vite's own .d.ts references, which a vitest upgrade can drop.
+    "types": ["node"]
+  },
+  "include": ["src", "test", "tsdown.config.ts", "vitest.config.ts"]
+}

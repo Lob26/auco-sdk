@@ -1,0 +1,25 @@
+{
+  "id": "frame.notification",
+  "variant": null,
+  "direction": "frame-to-host",
+  "products": [
+    "upload",
+    "upload-v2",
+    "read",
+    "attachments",
+    "validation-attachments",
+    "validation",
+    "sign",
+    "fill",
+    "list-validation"
+  ],
+  "source": "src/index.ts#L108",
+  "confidence": "code",
+  "data": {
+    "type": "SDK-NOTIFICATION",
+    "data": {
+      "message": "Mensaje de prueba",
+      "options": {}
+    }
+  }
+}

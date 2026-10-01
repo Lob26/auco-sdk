@@ -1,0 +1,11 @@
+{
+  "id": "frame.finish",
+  "variant": null,
+  "direction": "frame-to-host",
+  "products": ["sign"],
+  "source": "src/index.ts#L123",
+  "confidence": "code",
+  "data": {
+    "type": "SDK-FINISH"
+  }
+}

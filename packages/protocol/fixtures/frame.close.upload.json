@@ -1,0 +1,20 @@
+{
+  "id": "frame.close",
+  "variant": "upload",
+  "direction": "frame-to-host",
+  "products": ["upload", "upload-v2"],
+  "source": "src/index.ts#L113",
+  "confidence": "code",
+  "data": {
+    "type": "SDK-CLOSE",
+    "document": "DOC0000000AA",
+    "signProfile": [
+      {
+        "id": "AA",
+        "name": "Firmante De Prueba",
+        "email": "firmante@example.com",
+        "phone": "+570000000000"
+      }
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "root": false,
+  "extends": "//",
+  // packages/legacy is 1.0.9 moved verbatim: src/ and example/ only take Biome
+  // formatting. Every rule below flags legacy code, and fixing it would change
+  // the 1.x source; each one is switched off for the narrowest path it hits.
+  // Audit ids refer to https://github.com/Lob26/auco-sdk/issues/1
+  "overrides": [
+    {
+      "includes": ["src/**", "example/**"],
+      // Organizing imports reorders names in src/index.ts:1. Harmless, but it
+      // is an edit, not formatting.
+      "assist": { "actions": { "source": { "organizeImports": "off" } } }
+    },
+    {
+      "includes": ["src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            // src/index.ts:1 imports types without `import type` (same cause
+            // as verbatimModuleSyntax being off in tsconfig.json).
+            "useImportType": "off",
+            // src/index.ts:78 and :98 `iframe!` inside onMessage: the null
+            // check above does not narrow across the closure.
+            "noNonNullAssertion": "off",
+            // src/index.ts:138 `origin + '?id=' + uuid()`, the iframe.src line
+            // of audit 1.2.
+            "useTemplate": "off",
+            // src/index.ts:201 `let extraConstants` in getExtraConstants.
+            "useConst": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["example/**"],
+      "linter": {
+        "rules": {
+          // example/index.html:12 iframe without title, audit 2.4.
+          "a11y": { "useIframeTitle": "off" },
+          // example/index.js:7 `let metadata`.
+          "style": { "useConst": "off" },
+          // example/index.js:93 `window.onload = async function ()`.
+          "complexity": { "useArrowFunction": "off" },
+          "correctness": {
+            // example/index.js:23 unused `redirect` in onSDKClose.
+            "noUnusedFunctionParameters": "off",
+            // example/index.js:95 `unsus`, kept for the commented-out teardown.
+            "noUnusedVariables": "off"
+          }
+        }
+      }
+    }
+  ]
+}

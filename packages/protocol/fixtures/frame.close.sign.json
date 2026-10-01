@@ -1,0 +1,12 @@
+{
+  "id": "frame.close",
+  "variant": "sign",
+  "direction": "frame-to-host",
+  "products": ["sign"],
+  "source": "src/index.ts#L113",
+  "confidence": "code",
+  "data": {
+    "type": "SDK-CLOSE",
+    "redirectTo": "https://www.example.com/firma-terminada"
+  }
+}
