@@ -4,7 +4,7 @@ function uuid() {
   const s = d.toISOString().replaceAll(':', '-');
   return s;
 }
-export const AucoSDK: TAucoSDK = params => {
+export const AucoSDK: TAucoSDK = (params) => {
   parametersValidation(params);
   const messageFunc = setupEvents(params);
   const unsuscribe = () => {

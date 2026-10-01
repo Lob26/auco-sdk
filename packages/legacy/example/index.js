@@ -1,5 +1,5 @@
 //@ts-check
-import { AucoSDK } from '../dist/auco-sdk-integration.esm.js';
+import { AucoSDK } from '../dist/index.mjs';
 
 async function getFile(path) {
   const res = await fetch(path);
@@ -26,7 +26,7 @@ function getConfig(files) {
       },
       onSDKReady: () => {},
       onSDKToken: () => {
-        return new Promise(resolve => resolve(''));
+        return new Promise((resolve) => resolve(''));
       },
       onSDKBack: () => {
         window.location.reload();
@@ -90,7 +90,7 @@ function getConfig(files) {
   };
   return config;
 }
-window.onload = async function() {
+window.onload = async function () {
   const file1 = await getFile('./files/file.pdf');
   const unsus = AucoSDK(getConfig([file1]));
   // setTimeout(() => unsus(), 5000);

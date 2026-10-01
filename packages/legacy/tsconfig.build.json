@@ -1,0 +1,7 @@
+{
+  // Declarations are built from src only. The editor/typecheck config
+  // (tsconfig.json) also covers test/, and emitting .d.ts for test helpers
+  // fails under TS 7 (TS2883 on vitest's inferred types) and is useless anyway.
+  "extends": "./tsconfig.json",
+  "include": ["src"]
+}

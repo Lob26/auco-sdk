@@ -1,0 +1,41 @@
+# All CI logic lives in scripts/ci.sh; this file only provisions the runner.
+name: CI
+
+on:
+  # Branch pushes are covered by their pull_request run; only the integration
+  # branches need a push run of their own.
+  push:
+    branches: [develop, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Node ${{ matrix.node }}
+    # Browser library: an OS matrix exercises nothing the runner OS affects.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Version comes from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - run: bash scripts/ci.sh
