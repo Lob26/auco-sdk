@@ -1,0 +1,7 @@
+{
+  // Without the `source` condition, `@lob26/auco-compat` resolves to the
+  // built dist/index.d.mts: this project type-checks what ships.
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "customConditions": [], "types": [] },
+  "include": ["built-entry.ts"]
+}
