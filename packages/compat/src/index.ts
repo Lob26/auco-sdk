@@ -172,17 +172,19 @@ const startSession = (params: Config): AucoSession => {
       console.error(error, failure);
     });
   };
+  const failure = (name: string, cause: unknown): AucoError =>
+    cause instanceof AucoError
+      ? cause
+      : new AucoHandlerError('handler-rejected', `${name} failed`, { cause });
   const run = (name: string, callback: () => unknown): void => {
-    settle(callback).catch((cause: unknown) => {
-      report(
-        cause instanceof AucoError
-          ? cause
-          : new AucoHandlerError('handler-rejected', `${name} failed`, {
-              cause,
-            })
-      );
-    });
+    settle(callback).catch((cause: unknown) => report(failure(name, cause)));
   };
+  // For waitUntil: the rejection carries the callback's name, so the error
+  // embed reports for it can be unwrapped into what run() would have reported.
+  const named = (name: string, callback: () => unknown): Promise<unknown> =>
+    settle(callback).catch((cause: unknown) => {
+      throw failure(name, cause);
+    });
 
   // The previous session releases the iframe (src about:blank) before this
   // one points it at the frame again.
@@ -217,7 +219,13 @@ const startSession = (params: Config): AucoSession => {
   sessions.set(iframe, session);
 
   session.addEventListener('error', ({ detail }) => {
-    report(detail.error);
+    const { error } = detail;
+    // embed wraps a rejected waitUntil promise; ours already names the callback.
+    report(
+      error.code === 'handler-rejected' && error.cause instanceof AucoError
+        ? error.cause
+        : error
+    );
   });
   session.addEventListener('ready', () => {
     run('onSDKReady', () => events.onSDKReady());
@@ -243,7 +251,7 @@ const startSession = (params: Config): AucoSession => {
   session.addEventListener('close', ({ detail }) => {
     const { raw } = detail;
     detail.waitUntil(
-      settle(() =>
+      named('onSDKClose', () =>
         events.onSDKClose(
           raw.document ?? raw.similarity ?? '',
           raw.redirectTo ?? raw.status ?? '',
@@ -253,10 +261,10 @@ const startSession = (params: Config): AucoSession => {
     );
   });
   session.addEventListener('finish', ({ detail }) => {
-    detail.waitUntil(settle(() => events.onSDKFinish?.()));
+    detail.waitUntil(named('onSDKFinish', () => events.onSDKFinish?.()));
   });
   session.addEventListener('back', ({ detail }) => {
-    detail.waitUntil(settle(() => events.onSDKBack?.()));
+    detail.waitUntil(named('onSDKBack', () => events.onSDKBack?.()));
   });
   return session;
 };
