@@ -1,0 +1,21 @@
+{
+  "name": "@lob26/auco-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "End-to-end tests in Chromium: host pages and the fake frame on different origins.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "vite": "^8.3.1",
+    "@types/node": "^24.19.0",
+    "@lob26/auco-embed": "workspace:*",
+    "@lob26/auco-compat": "workspace:*",
+    "@lob26/auco-protocol": "workspace:*",
+    "@lob26/auco-fake-frame": "workspace:*"
+  }
+}

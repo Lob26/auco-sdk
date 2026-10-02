@@ -1,4 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["src", "tsdown.config.ts"]
+  "compilerOptions": {
+    // Tests read fixtures with node:fs; src must not, and tsconfig.build.json
+    // drops these types again for the emit.
+    "types": ["node"]
+  },
+  "include": ["src", "test", "tsdown.config.ts", "vitest.config.ts"]
 }
