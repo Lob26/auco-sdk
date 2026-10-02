@@ -1,5 +1,6 @@
 {
-  // Declarations come from src only; tests and configs stay out of the emit.
+  // Declarations come from src only, without node types.
   "extends": "./tsconfig.json",
+  "compilerOptions": { "types": [] },
   "include": ["src"]
 }

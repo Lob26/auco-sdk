@@ -20,10 +20,14 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@lob26/auco-protocol": "workspace:*",
-    "tsdown": "^0.23.0"
+    "tsdown": "^0.23.0",
+    "vitest": "^5.0.3",
+    "@types/node": "^24.19.0",
+    "happy-dom": "^20.14.5"
   }
 }

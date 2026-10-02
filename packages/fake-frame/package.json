@@ -1,0 +1,20 @@
+{
+  "name": "@lob26/auco-fake-frame",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Stand-in for an Auco frame app: speaks PROTOCOL.md with the fixtures as data. e2e only.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/contract.ts"
+  },
+  "scripts": {
+    "serve": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "vite": "^8.3.1",
+    "@types/node": "^24.19.0"
+  }
+}

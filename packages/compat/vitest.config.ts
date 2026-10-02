@@ -25,7 +25,8 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
-    include: ['../legacy/test/**/*.test.ts'],
+    include: ['../legacy/test/**/*.test.ts', 'test/**/*.test.ts'],
+    maxWorkers: 2,
     env: { AUCO_TARGET: 'compat' },
   },
 });

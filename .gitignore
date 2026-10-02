@@ -5,3 +5,6 @@ dist
 .env
 yarn.lock
 package-log.json
+# Playwright artifacts
+test-results/
+playwright-report/

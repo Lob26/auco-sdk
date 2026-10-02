@@ -8,7 +8,7 @@
 # together or the local gates and CI drift apart.
 set -euo pipefail
 
-readonly STEPS=(install fixtures shell lint typecheck build test mutants size)
+readonly STEPS=(install fixtures shell lint typecheck build test mutants size e2e)
 
 step_install() { pnpm install --frozen-lockfile; }
 
@@ -42,6 +42,16 @@ step_build() { pnpm -r --if-present build; }
 step_test() { pnpm -r --if-present test; }
 step_mutants() { bash scripts/mutants.sh; }
 step_size() { pnpm run size; }
+
+# Chromium only; --with-deps installs its system libraries, which a CI runner
+# lacks and a dev machine usually has (and would need sudo for).
+step_e2e() {
+  local deps=()
+  [[ -n ${CI:-} ]] && deps=(--with-deps)
+  pnpm --filter @lob26/auco-e2e exec playwright install "${deps[@]}" chromium
+  # Not "test": pnpm -r test runs the unit suites and must not start browsers.
+  pnpm --filter @lob26/auco-e2e e2e
+}
 
 in_actions() { [[ -n ${GITHUB_ACTIONS:-} ]]; }
 

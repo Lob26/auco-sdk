@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    // vite.config.ts imports src/contract.ts by its real name, as the native
+    // config loader requires.
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src", "*.ts"]
+}
