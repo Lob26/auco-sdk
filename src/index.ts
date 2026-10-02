@@ -73,7 +73,10 @@ const setupEvents = (params: Config) => {
   }
 
   async function onMessage(event: MessageEvent) {
-    if (event.origin !== origin) return;
+    // The origin alone is not enough: two SDK iframes on the same origin (two
+    // `sign`, or `upload` + `read` on upload.auco.ai) would hear each other.
+    if (event.origin !== origin || event.source !== iframe.contentWindow)
+      return;
     if (event.data.ready) {
       iframe!.contentWindow?.postMessage(
         {
